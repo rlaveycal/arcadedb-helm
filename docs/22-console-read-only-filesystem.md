@@ -44,7 +44,7 @@ mounted volume; `/home/arcadedb` itself is not, and cannot be — it holds
 
 ```
 docker run --rm -it --read-only --tmpfs /tmp:exec,mode=1777 \
-  arcadedata/arcadedb:26.8.1 bin/console.sh
+  arcadedata/arcadedb:26.9.1 bin/console.sh
 ```
 
 Typing any command reproduces the reported stack trace byte for byte.
@@ -147,7 +147,7 @@ Test Suites: 14 passed, 14 total
 Tests:       164 passed, 164 total
 ```
 
-### kind integration (3-pod HA, `arcadedata/arcadedb:26.8.1`)
+### kind integration (3-pod HA, `arcadedata/arcadedb:26.9.1`)
 
 ```
 ==> [1/8] ... All 3 pods Ready.
@@ -176,7 +176,7 @@ pty and typing `help`, `list databases`, `exit`:
 - Interactive console works cleanly under the chart's default hardened posture.
 - Server behaviour is unchanged: same working directory, same `rootPath`
   auto-detection, same `config/` and `databases/` locations. Verified against
-  `arcadedata/arcadedb:26.8.1` under `--read-only` (`/api/v1/ready` → 204,
+  `arcadedata/arcadedb:26.9.1` under `--read-only` (`/api/v1/ready` → 204,
   `/api/v1/health` → 204, `defaultDatabases` created, `server-users.jsonl`
   written to `/home/arcadedb/config`).
 - History is ephemeral (pod-lifetime), like the `emptyDir` the issue proposed.
