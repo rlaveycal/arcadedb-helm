@@ -1,0 +1,95 @@
+suite: Certificate
+templates:
+  - certificate.yaml
+release:
+  name: test
+  namespace: default
+tests:
+  - it: is not rendered unless TLS and cert-manager are enabled
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders the cert-manager Certificate with service and StatefulSet DNS names
+    set:
+      tls:
+        enabled: true
+        secretRef:
+          name: custom-arcadedb-tls
+        certManager:
+          enabled: true
+          issuerRef:
+            kind: Issuer
+            name: arcadedb-issuer
+      replicaCount: 3
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Certificate
+      - equal:
+          path: apiVersion
+          value: cert-manager.io/v1
+      - equal:
+          path: metadata.name
+          value: test-arcadedb
+      - contains:
+          path: spec.dnsNames
+          content: test-arcadedb.default.svc.cluster.local
+      - contains:
+          path: spec.dnsNames
+          content: test-arcadedb-0.test-arcadedb.default.svc.cluster.local
+      - contains:
+          path: spec.dnsNames
+          content: test-arcadedb-1.test-arcadedb.default.svc.cluster.local
+      - contains:
+          path: spec.dnsNames
+          content: test-arcadedb-2.test-arcadedb.default.svc.cluster.local
+      - equal:
+          path: spec.subject.organizations[0]
+          value: test-arcadedb
+      - equal:
+          path: spec.isCA
+          value: false
+      - contains:
+          path: spec.usages
+          content: server auth
+      - contains:
+          path: spec.usages
+          content: client auth
+      - equal:
+          path: spec.secretName
+          value: custom-arcadedb-tls
+      - equal:
+          path: spec.privateKey.algorithm
+          value: ECDSA
+      - equal:
+          path: spec.privateKey.size
+          value: 256
+      - equal:
+          path: spec.issuerRef.kind
+          value: Issuer
+      - equal:
+          path: spec.issuerRef.name
+          value: arcadedb-issuer
+      - equal:
+          path: spec.keystores.pkcs12.create
+          value: true
+      - equal:
+          path: spec.keystores.pkcs12.passwordSecretRef.name
+          value: arcadedb-credentials-secret
+      - equal:
+          path: spec.keystores.pkcs12.passwordSecretRef.key
+          value: rootPassword
+
+  - it: includes an extra DNS name in the cert-manager Certificate
+    set:
+      tls:
+        enabled: true
+        certManager:
+          enabled: true
+          extraDnsNames: ["extra-dns-name.local"]
+    asserts:
+      - contains:
+          path: spec.dnsNames
+          content: extra-dns-name.local

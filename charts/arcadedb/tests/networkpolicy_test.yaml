@@ -26,7 +26,7 @@ tests:
           of: NetworkPolicy
       - equal:
           path: metadata.name
-          value: test-arcadedb-http
+          value: test-arcadedb-protocols
       - equal:
           path: spec.podSelector.matchLabels["app.kubernetes.io/name"]
           value: arcadedb
@@ -80,6 +80,21 @@ tests:
       - equal:
           path: spec.ingress[0].ports[0].port
           value: 9090
+
+  - it: protocols policy includes HTTPS and enabled plugin ports
+    set:
+      networkPolicy.enabled: true
+      tls.enabled: true
+      arcadedb.plugins.gremlin.enabled: true
+      arcadedb.plugins.gremlin.port: 8182
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.ingress[0].ports
+          content: { port: 2490, protocol: TCP }
+      - contains:
+          path: spec.ingress[0].ports
+          content: { port: 8182, protocol: TCP }
 
   - it: raft policy port reflects custom service.rpc.port
     set:

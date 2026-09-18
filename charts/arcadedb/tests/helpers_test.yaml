@@ -35,7 +35,7 @@ tests:
     asserts:
       - contains:
           path: spec.template.spec.containers[0].command
-          content: "-Darcadedb.ha.serverList=test-arcadedb-0.test-arcadedb.default.svc.cluster.local:2434:2480,test-arcadedb-1.test-arcadedb.default.svc.cluster.local:2434:2480,test-arcadedb-2.test-arcadedb.default.svc.cluster.local:2434:2480"
+          content: "-Darcadedb.ha.serverList=test-arcadedb-0.test-arcadedb.default.svc.cluster.local,test-arcadedb-1.test-arcadedb.default.svc.cluster.local,test-arcadedb-2.test-arcadedb.default.svc.cluster.local"
 
   - it: arcadedb.nodenames sizes to autoscaling.maxReplicas when HPA enabled and larger than replicaCount
     set:
@@ -46,16 +46,7 @@ tests:
     asserts:
       - contains:
           path: spec.template.spec.containers[0].command
-          content: "-Darcadedb.ha.serverList=test-arcadedb-0.test-arcadedb.default.svc.cluster.local:2434:2480,test-arcadedb-1.test-arcadedb.default.svc.cluster.local:2434:2480,test-arcadedb-2.test-arcadedb.default.svc.cluster.local:2434:2480,test-arcadedb-3.test-arcadedb.default.svc.cluster.local:2434:2480,test-arcadedb-4.test-arcadedb.default.svc.cluster.local:2434:2480"
-
-  - it: arcadedb.nodenames uses custom rpc port
-    set:
-      replicaCount: 2
-      service.rpc.port: 5555
-    asserts:
-      - contains:
-          path: spec.template.spec.containers[0].command
-          content: "-Darcadedb.ha.serverList=test-arcadedb-0.test-arcadedb.default.svc.cluster.local:5555:2480,test-arcadedb-1.test-arcadedb.default.svc.cluster.local:5555:2480"
+          content: "-Darcadedb.ha.serverList=test-arcadedb-0.test-arcadedb.default.svc.cluster.local,test-arcadedb-1.test-arcadedb.default.svc.cluster.local,test-arcadedb-2.test-arcadedb.default.svc.cluster.local,test-arcadedb-3.test-arcadedb.default.svc.cluster.local,test-arcadedb-4.test-arcadedb.default.svc.cluster.local"
 
   - it: arcadedb.plugin.parameters emits gremlin plugin entry and port
     set:
@@ -68,6 +59,17 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].command
           content: "-Darcadedb.gremlin.port=8182"
+
+  - it: arcadedb.plugin.parameters emits bolt plugin entry and port
+    set:
+      arcadedb.plugins.bolt.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].command
+          content: "-Darcadedb.server.plugins=Bolt:com.arcadedb.bolt.BoltProtocolPlugin"
+      - contains:
+          path: spec.template.spec.containers[0].command
+          content: "-Darcadedb.bolt.port=7687"
 
   - it: arcadedb.plugin.parameters emits postgres plugin entry and port
     set:
@@ -104,11 +106,11 @@ tests:
 
   - it: custom plugin without class fails the template render
     set:
-      arcadedb.plugins.bolt.enabled: true
-      arcadedb.plugins.bolt.port: 7687
+      arcadedb.plugins.myplugin.enabled: true
+      arcadedb.plugins.myplugin.port: 1234
     asserts:
       - failedTemplate:
-          errorPattern: "Custom plugin 'bolt' has no class specified."
+          errorMessage: "Custom plugin 'myplugin' has no class specified."
 
   - it: custom plugin with port=false renders without a port param and does not fail
     set:

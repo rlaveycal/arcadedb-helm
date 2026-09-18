@@ -55,6 +55,9 @@ arcadedb:
   ## @section arcadedb.plugins
   ## Uncomment and configure to enable wire-protocol plugins.
   plugins: {}
+    # bolt:
+    #   enabled: true
+    #   port: 7687
     # gremlin:
     #   enabled: true
     #   port: 8182
@@ -144,10 +147,72 @@ service:
     type: ClusterIP
     ## @param service.http.port HTTP / Studio port
     port: 2480
+  ## @section service.https
+  https:
+    ## @param service.https.port HTTPS / Studio port
+    port: 2490
   ## @section service.rpc
   rpc:
     ## @param service.rpc.port Raft gRPC port (new ha-raft subsystem). Was 2424 in old binary-protocol HA.
     port: 2434
+  ## @section service.external
+  external:
+    ## @param service.external.enabled Expose all protocol ports externally. Use instead of http.type
+    enabled: false
+    ## @param service.external.type External service type
+    type: LoadBalancer
+
+## @param statefulSetAnnotations Annotations added to the statefulset
+statefulSetAnnotations: {}
+
+## @param statefulSetLabels Labels added to the statefulset
+statefulSetLabels: {}
+
+## @section tls
+tls:
+  ## @param tls.enabled Enable TLS
+  enabled: false
+
+  ## @param tls.bolt Bolt TLS option. OPTIONAL or REQUIRED
+  bolt: OPTIONAL
+
+  ## @param tls.mountPath Path where TLS certificates are mounted in the container.
+  mountPath: /etc/certs/arcadedb
+
+  ## @section tls.secretRef
+  secretRef:
+    ## @param tls.secretRef.name Name of the secret containing TLS certificates
+    name: arcadedb-tls
+
+    ## @param tls.secretRef.password Password for the certificate stores
+    password: $(rootPassword)
+
+    ## @section tls.secretRef.keyStore
+    keyStore:
+      ## @param tls.secretRef.keyStore.key Key in the secret containing the key store
+      key: keystore.p12
+
+    ## @section tls.secretRef.trustStore
+    trustStore:
+      ## @param tls.secretRef.trustStore.format Override the trust store default format (JKS) by setting `javax.net.ssl.trustStoreType` (e.g. PKCS12)
+      format: JKS
+      ## @param tls.secretRef.trustStore.key Key in the secret containing the trust store
+      key: truststore.jks
+
+  ## @section tls.certManager
+  certManager:
+    ## @param tls.certManager.enabled Generate and manage TLS certificates using cert-manager
+    enabled: false
+
+    ## @param tls.certManager.extraDnsNames Adds extra DNS names to the TLS certificate
+    extraDnsNames: []
+
+    ## @section tls.certManager.issuerRef
+    issuerRef:
+      ## @param tls.certManager.issuerRef.kind Kind of the cert-manager issuer
+      kind: ClusterIssuer
+      ## @param tls.certManager.issuerRef.name Name of the cert-manager issuer
+      name: my-issuer
 
 ## @section ingress
 ingress:
@@ -359,8 +424,8 @@ observability:
     otlp:
       ## @param observability.metrics.otlp.enabled Enable the OTLP metrics registry
       enabled: false
-      ## @param observability.metrics.otlp.endpoint OTLP/gRPC metrics endpoint
-      endpoint: http://localhost:4317
+      ## @param observability.metrics.otlp.endpoint OTLP/http metrics endpoint
+      endpoint: http://localhost:4318/v1/metrics
   ## @section observability.tracing
   tracing:
     ## @param observability.tracing.enabled Enable distributed tracing (plugin ships in the standard image)

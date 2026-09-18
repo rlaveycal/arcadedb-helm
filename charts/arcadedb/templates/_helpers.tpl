@@ -83,10 +83,8 @@ KubernetesAutoJoin can resolve any pod ordinal up to the maximum scale.
 {{- $names := list -}}
 {{- $fullname := (include "arcadedb.fullname" .) -}}
 {{- $k8sSuffix := (include "arcadedb.k8sSuffix" .) -}}
-{{- $rpcPort := int .Values.service.rpc.port -}}
-{{- $httpPort := int .Values.service.http.port -}}
 {{- range $i, $_ := until $replicas }}
-{{- $names = append $names (printf "%s-%d%s:%d:%d" $fullname $i $k8sSuffix $rpcPort $httpPort) }}
+{{- $names = append $names (printf "%s-%d%s" $fullname $i $k8sSuffix) }}
 {{- end }}
 {{- join "," $names -}}
 {{- end }}
@@ -98,7 +96,9 @@ Preparing a list of plugin ports to build plugin configurations.
   {{- range $plugin, $config := .Values.arcadedb.plugins -}}
     {{- if $config.enabled }}
       {{- $port := int 0}}
-      {{- if eq $plugin "gremlin" }}
+      {{- if eq $plugin "bolt" }}
+        {{- $port = default 7687 $config.port }}
+      {{- else if eq $plugin "gremlin" }}
         {{- $port = default 8182 $config.port }}
       {{- else if eq $plugin "postgres" }}
         {{- $port = default 5432 $config.port }}
@@ -141,7 +141,10 @@ Create a comma separated list of plugins to be enabled in arcadedb
 {{- $plugins := list -}}
 {{- $params := list -}}
   {{- range $plugin, $config := (include "_arcadedb.plugin.ports" . | fromYaml) -}}
-    {{- if eq $plugin "gremlin" -}}
+    {{- if eq $plugin "bolt" -}}
+      {{- $plugins = append $plugins "Bolt:com.arcadedb.bolt.BoltProtocolPlugin" -}}
+      {{- $params = append $params (printf "-Darcadedb.bolt.port=%d" (int $config.port)) -}}
+    {{- else if eq $plugin "gremlin" -}}
       {{- $plugins = append $plugins "GremlinServer:com.arcadedb.server.gremlin.GremlinServerPlugin" -}}
       {{- $params = append $params (printf "-Darcadedb.gremlin.port=%d" (int $config.port)) -}}
     {{- else if eq $plugin "postgres" -}}
@@ -197,6 +200,19 @@ Create service configuration for the enabled plugins
 {{- end -}}
 
 {{/*
+Create network policy configuration for the enabled plugins
+*/}}
+{{- define "arcadedb.plugin.networkPolicy" -}}
+  {{- $plugins := (include "_arcadedb.plugin.ports" . | fromYaml) }}
+  {{- range $plugin, $config := $plugins }}
+    {{- if (gt (int $config.port) 0) }}
+- port: {{ $config.port }}
+  protocol: TCP
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 Observability -D JVM args (logging, OTLP metrics, tracing, readiness).
 All opt-in; emits nothing when defaults are unchanged.
 */}}
@@ -224,6 +240,34 @@ All opt-in; emits nothing when defaults are unchanged.
 {{- if $health.readinessRequiresHA }}
 - -Darcadedb.server.readinessRequiresHA=true
 - -Darcadedb.server.readinessHAMaxLag={{ $health.readinessHAMaxLag }}
+{{- end }}
+{{- end -}}
+
+{{/*
+TLS parameters
+*/}}
+{{- define "arcadedb.tls.parameters" -}}
+{{- if .Values.tls.enabled }}
+- -Darcadedb.ssl.enabled=true
+- -Darcadedb.server.httpsIncomingPort={{ .Values.service.https.port }}
+  {{- if and (hasKey .Values.arcadedb.plugins "bolt") .Values.arcadedb.plugins.bolt.enabled }}
+- -Darcadedb.bolt.ssl={{ .Values.tls.bolt }}
+  {{- end }}
+  {{- $keyStoreKey := .Values.tls.secretRef.keyStore.key }}
+  {{- $trustStoreKey := .Values.tls.secretRef.trustStore.key }}
+  {{- $trustStoreFormat := .Values.tls.secretRef.trustStore.format }}
+  {{- if .Values.tls.certManager.enabled }}
+    {{- $keyStoreKey = "keystore.p12" -}}
+    {{- $trustStoreFormat = "PKCS12" -}}
+    {{- $trustStoreKey = "truststore.p12" -}}
+  {{- end }}
+  {{- if ne "JKS" $trustStoreFormat }}
+- -Djavax.net.ssl.trustStoreType={{ $trustStoreFormat }}
+  {{- end }}
+- -Darcadedb.ssl.keyStore={{ printf "%s/%s" .Values.tls.mountPath $keyStoreKey }}
+- -Darcadedb.ssl.keyStorePassword={{ .Values.tls.secretRef.password }}
+- -Darcadedb.ssl.trustStore={{ printf "%s/%s" .Values.tls.mountPath $trustStoreKey }}
+- -Darcadedb.ssl.trustStorePassword={{ .Values.tls.secretRef.password }}
 {{- end }}
 {{- end -}}
 

@@ -1,0 +1,38 @@
+{{- if and .Values.tls.enabled .Values.tls.certManager.enabled }}
+kind: Certificate
+apiVersion: cert-manager.io/v1
+metadata:
+  name: {{ include "arcadedb.fullname" . }}
+  labels:
+    {{- include "arcadedb.labels" . | nindent 4 }}
+spec:
+  dnsNames:
+    - {{ include "arcadedb.fullname" . }}.{{ $.Release.Namespace }}.svc.cluster.local
+    {{- $nodes := (include "arcadedb.nodenames" .) -}}
+    {{- range $n := split "," $nodes }}
+    - {{ $n }}
+    {{- end }}
+    {{- with .Values.tls.certManager.extraDnsNames }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  subject:
+    organizations:
+      - {{ include "arcadedb.fullname" . }}
+  isCA: false
+  usages:
+    - server auth
+    - client auth
+  secretName: {{ .Values.tls.secretRef.name }}
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    kind: {{ .Values.tls.certManager.issuerRef.kind }}
+    name: {{ .Values.tls.certManager.issuerRef.name }}
+  keystores:
+    pkcs12:
+      create: true
+      passwordSecretRef:
+        name: arcadedb-credentials-secret
+        key: rootPassword
+{{- end }}
