@@ -7,6 +7,10 @@ arcadedb:
   databaseDirectory: "/home/arcadedb/databases"
   ## @param arcadedb.configDirectory Config storage directory inside the container (users, tokens, server settings)
   configDirectory: "/home/arcadedb/config"
+  ## @param arcadedb.backupConfigMap ConfigMap containing the backup.json file
+  backupConfigMap: null
+  ## @param arcadedb.mcpConfigMap ConfigMap containing the mcp-config.json file
+  mcpConfigMap: null
   ## @param arcadedb.defaultDatabases Databases to create at startup. Empty = none.
   ## Example: "Universe[admin:password]"
   defaultDatabases: ""

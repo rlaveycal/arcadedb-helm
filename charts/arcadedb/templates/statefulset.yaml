@@ -107,6 +107,18 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if .Values.arcadedb.backupConfigMap }}
+            - name: arcadedb-config-backup-json
+              mountPath: {{ .Values.arcadedb.configDirectory }}/backup.json
+              subPath: backup.json
+              readOnly: true
+            {{- end }}
+            {{- if .Values.arcadedb.mcpConfigMap }}
+            - name: arcadedb-config-mcp-json
+              mountPath: {{ .Values.arcadedb.configDirectory }}/mcp-config.json
+              subPath: mcp-config.json
+              readOnly: true
+            {{- end }}
             {{- if .Values.tls.enabled }}
             - name: tls-certs
               mountPath: {{ .Values.tls.mountPath }}
@@ -139,6 +151,10 @@ spec:
               {{- end }}
             - name: ARCADEDB_LOG_DIR
               value: {{ .Values.arcadedb.logsDirectory | quote }}
+            - name: ARCADEDB_PID
+              value: /tmp/arcadedb.pid
+            - name: XDG_CACHE_HOME
+              value: /tmp/.cache
             {{- with .Values.arcadedb.consoleWorkingDirectory }}
             - name: ARCADEDB_SETTINGS
               value: {{ printf "-Duser.dir=%s" . | quote }}
@@ -147,6 +163,16 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
+        {{- if .Values.arcadedb.backupConfigMap }}
+        - name: arcadedb-config-backup-json
+          configMap:
+            name: {{ .Values.arcadedb.backupConfigMap }}
+        {{- end }}
+        {{- if .Values.arcadedb.mcpConfigMap }}
+        - name: arcadedb-config-mcp-json
+          configMap:
+            name: {{ .Values.arcadedb.mcpConfigMap }}
+        {{- end }}
         {{- if .Values.tls.enabled }}
         - name: tls-certs
           secret:

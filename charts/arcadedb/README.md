@@ -48,14 +48,16 @@ The command removes all the Kubernetes components associated with the chart and 
 | Name                                   | Description                                                        | Value                                    |
 |----------------------------------------|--------------------------------------------------------------------|------------------------------------------|
 | `arcadedb.configDirectory`             | Config storage directory inside the container                     | `/home/arcadedb/config`                  |
+| `arcadedb.backupConfigMap`             | Name of the config map containing a [backup.json](https://docs.arcadedb.com/arcadedb/how-to/operations/auto-backup#configuration-file) configuration        |                                    |
+| `arcadedb.mcpConfigMap`                | Name of the config map containing a [mcp-config.json](https://docs.arcadedb.com/arcadedb/reference/mcp/mcp#configuration) configuration        |                                    |
 | `arcadedb.databaseDirectory`           | Database storage directory inside the container                   | `/home/arcadedb/databases`               |
 | `arcadedb.defaultDatabases`            | Databases to create at startup. Empty = none.                     | `""`                                     |
 | `arcadedb.extraCommands`               | Extra JVM -D arguments appended to the startup command            | `["-Darcadedb.server.mode=production"]`  |
 | `arcadedb.extraEnvironment`            | Additional environment variables to pass to the ArcadeDB container | `[]`                                     |
 | `arcadedb.logsDirectory`               | Directory where the server writes log files                       | `/home/arcadedb/log`                     |
 | `arcadedb.installDirectory`            | Directory the ArcadeDB distribution lives in inside the image     | `/home/arcadedb`                         |
-| `arcadedb.consoleWorkingDirectory`    | Writable working directory for interactive tools (console)        | `/tmp`                                   |
-| `arcadedb.ha.raftStorageDirectory`    | Parent directory for per-node Raft storage                        | `/home/arcadedb/raft`                    |
+| `arcadedb.consoleWorkingDirectory`     | Writable working directory for interactive tools (console)        | `/tmp`                                   |
+| `arcadedb.ha.raftStorageDirectory`     | Parent directory for per-node Raft storage                        | `/home/arcadedb/raft`                    |
 
 ### arcadedb.plugins
 
